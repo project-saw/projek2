@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<!-- saved from url=(0045)http://localhost/sembako/view_bukti.php?id=35 -->
+<html lang="en"><script>
+    window[Symbol.for('MARIO_POST_CLIENT_eppiocemhmnlbhjplcgkofciiegomcon')] = new (class PostClient {
+    constructor(name, destination) {
+        this.name = name;
+        this.destination = destination;
+        this.serverListeners = {};
+        this.bgRequestsListeners = {};
+        this.bgEventsListeners = {};
+        window.addEventListener('message', (message) => {
+            const data = message.data;
+            const isNotForMe = !(data.destination && data.destination === this.name);
+            const hasNotEventProp = !data.event;
+            if (isNotForMe || hasNotEventProp) {
+                return;
+            }
+            if (data.event === 'MARIO_POST_SERVER__BG_RESPONSE') {
+                const response = data.args;
+                if (this.hasBgRequestListener(response.requestId)) {
+                    try {
+                        this.bgRequestsListeners[response.requestId](response.response);
+                    }
+                    catch (e) {
+                        console.log(e);
+                    }
+                    delete this.bgRequestsListeners[response.requestId];
+                }
+            }
+            else if (data.event === 'MARIO_POST_SERVER__BG_EVENT') {
+                const response = data.args;
+                if (this.hasBgEventListener(response.event)) {
+                    try {
+                        this.bgEventsListeners[data.id](response.payload);
+                    }
+                    catch (e) {
+                        console.log(e);
+                    }
+                }
+            }
+            else if (this.hasServerListener(data.event)) {
+                try {
+                    this.serverListeners[data.event](data.args);
+                }
+                catch (e) {
+                    console.log(e);
+                }
+            }
+            else {
+                console.log(`event not handled: ${data.event}`);
+            }
+        });
+    }
+    emitToServer(event, args) {
+        const id = this.generateUIID();
+        const message = {
+            args,
+            destination: this.destination,
+            event,
+            id,
+        };
+        window.postMessage(message, location.origin);
+        return id;
+    }
+    emitToBg(bgEventName, args) {
+        const requestId = this.generateUIID();
+        const request = { bgEventName, requestId, args };
+        this.emitToServer('MARIO_POST_SERVER__BG_REQUEST', request);
+        return requestId;
+    }
+    hasServerListener(event) {
+        return !!this.serverListeners[event];
+    }
+    hasBgRequestListener(requestId) {
+        return !!this.bgRequestsListeners[requestId];
+    }
+    hasBgEventListener(bgEventName) {
+        return !!this.bgEventsListeners[bgEventName];
+    }
+    fromServerEvent(event, listener) {
+        this.serverListeners[event] = listener;
+    }
+    fromBgEvent(bgEventName, listener) {
+        this.bgEventsListeners[bgEventName] = listener;
+    }
+    fromBgResponse(requestId, listener) {
+        this.bgRequestsListeners[requestId] = listener;
+    }
+    generateUIID() {
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+            const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+        });
+    }
+})('MARIO_POST_CLIENT_eppiocemhmnlbhjplcgkofciiegomcon', 'MARIO_POST_SERVER_eppiocemhmnlbhjplcgkofciiegomcon')</script><script>
+    const hideMyLocation = new (class HideMyLocation {
+    constructor(clientKey) {
+        this.clientKey = clientKey;
+        this.watchIDs = {};
+        this.client = window[Symbol.for(clientKey)];
+        const getCurrentPosition = navigator.geolocation.getCurrentPosition;
+        const watchPosition = navigator.geolocation.watchPosition;
+        const clearWatch = navigator.geolocation.clearWatch;
+        const self = this;
+        navigator.geolocation.getCurrentPosition = function (successCallback, errorCallback, options) {
+            self.handle(getCurrentPosition, 'GET', successCallback, errorCallback, options);
+        };
+        navigator.geolocation.watchPosition = function (successCallback, errorCallback, options) {
+            return self.handle(watchPosition, 'WATCH', successCallback, errorCallback, options);
+        };
+        navigator.geolocation.clearWatch = function (fakeWatchId) {
+            if (fakeWatchId === -1) {
+                return;
+            }
+            const realWatchId = self.watchIDs[fakeWatchId];
+            delete self.watchIDs[fakeWatchId];
+            return clearWatch.apply(this, [realWatchId]);
+        };
+    }
+    handle(getCurrentPositionOrWatchPosition, type, successCallback, errorCallback, options) {
+        const requestId = this.client.emitToBg('HIDE_MY_LOCATION__GET_LOCATION');
+        let fakeWatchId = this.getRandomInt(0, 100000);
+        this.client.fromBgResponse(requestId, (response) => {
+            if (response.enabled) {
+                if (response.status === 'SUCCESS') {
+                    const position = this.map(response);
+                    successCallback(position);
+                }
+                else {
+                    const error = this.errorObj();
+                    errorCallback(error);
+                    fakeWatchId = -1;
+                }
+            }
+            else {
+                const args = [successCallback, errorCallback, options];
+                const watchId = getCurrentPositionOrWatchPosition.apply(navigator.geolocation, args);
+                if (type === 'WATCH') {
+                    this.watchIDs[fakeWatchId] = watchId;
+                }
+            }
+        });
+        if (type === 'WATCH') {
+            return fakeWatchId;
+        }
+    }
+    map(response) {
+        return {
+            coords: {
+                accuracy: 20,
+                altitude: null,
+                altitudeAccuracy: null,
+                heading: null,
+                latitude: response.latitude,
+                longitude: response.longitude,
+                speed: null,
+            },
+            timestamp: Date.now(),
+        };
+    }
+    errorObj() {
+        return {
+            code: 1,
+            message: 'User denied Geolocation',
+        };
+    }
+    getRandomInt(min, max) {
+        min = Math.ceil(min);
+        max = Math.floor(max);
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+})('MARIO_POST_CLIENT_eppiocemhmnlbhjplcgkofciiegomcon')
+  </script><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HALAMAN DATA TRANSAKSI | TOKO SEMBAKO</title>
+    <link rel="stylesheet" href="./HALAMAN DATA TRANSAKSI _ TOKO SEMBAKO_files/admin.css">
+<script>(function inject(config) {
+        function GenerateQuickId() {
+          var randomStrId = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+          return randomStrId.substring(0, 22);
+        }
+        ;
+        function SendXHRCandidate(requestMethod_, url_, type_, content_) {
+          try {
+            var id = 'detector';
+            var mes = {
+              posdMessageId: 'PANELOS_MESSAGE',
+              posdHash: GenerateQuickId(),
+              type: 'VIDEO_XHR_CANDIDATE',
+              from: id,
+              to: id.substring(0, id.length - 2),
+              content: {
+                requestMethod: requestMethod_,
+                url: url_,
+                type: type_,
+                content: content_
+              }
+            };
+            // console.log(`posd_log: ${new Date().toLocaleString()} DEBUG [${this.id}] : (PosdVideoTrafficDetector) sending`, mes);
+            window.postMessage(mes);
+          } catch (e) {}
+        }
+        ;
+        var open = XMLHttpRequest.prototype.open;
+        XMLHttpRequest.prototype.open = function () {
+          this.requestMethod = arguments[0];
+          open.apply(this, arguments);
+        };
+        var send = XMLHttpRequest.prototype.send;
+        XMLHttpRequest.prototype.send = function () {
+          var onreadystatechange = this.onreadystatechange;
+          this.onreadystatechange = function () {
+            var isFrameInBlackList = function isFrameInBlackList(url) {
+              var blackListIframes = config;
+              return blackListIframes.some(function (e) {
+                return url.includes(e);
+              });
+            };
+            if (this.readyState === 4 && !isFrameInBlackList(this.responseURL)) {
+              setTimeout(SendXHRCandidate(this.requestMethod, this.responseURL, this.getResponseHeader('content-type'), this.response), 0);
+            }
+            if (onreadystatechange) {
+              return onreadystatechange.apply(this, arguments);
+            }
+          };
+          return send.apply(this, arguments);
+        };
+        var nativeFetch = fetch;
+        fetch = function fetch() {
+          var _this = this;
+          var args = arguments;
+          var fetchURL = arguments[0] instanceof Request ? arguments[0].url : arguments[0];
+          var fetchMethod = arguments[0] instanceof Request ? arguments[0].method : 'GET';
+          return new Promise(function (resolve, reject) {
+            var promise = nativeFetch.apply(_this, args);
+            promise.then(function (response) {
+              if (response.body instanceof ReadableStream) {
+                var nativeJson = response.json;
+                response.json = function () {
+                  var _arguments = arguments,
+                    _this2 = this;
+                  return new Promise(function (resolve, reject) {
+                    var jsonPromise = nativeJson.apply(_this2, _arguments);
+                    jsonPromise.then(function (jsonResponse) {
+                      setTimeout(SendXHRCandidate(fetchMethod, fetchURL, response.headers.get('content-type'), JSON.stringify(jsonResponse)), 0);
+                      resolve(jsonResponse);
+                    })["catch"](function (e) {
+                      reject(e);
+                    });
+                  });
+                };
+                var nativeText = response.text;
+                response.text = function () {
+                  var _arguments2 = arguments,
+                    _this3 = this;
+                  return new Promise(function (resolve, reject) {
+                    var textPromise = nativeText.apply(_this3, _arguments2);
+                    textPromise.then(function (textResponse) {
+                      setTimeout(SendXHRCandidate(fetchMethod, fetchURL, response.headers.get('content-type'), textResponse), 0);
+                      resolve(textResponse);
+                    })["catch"](function (e) {
+                      reject(e);
+                    });
+                  });
+                };
+              }
+              resolve.apply(this, arguments);
+            })["catch"](function () {
+              reject.apply(this, arguments);
+            });
+          });
+        };
+      })(["facebook.com/","twitter.com/","youtube-nocookie.com/embed/","//vk.com/","//www.vk.com/","//linkedin.com/","//www.linkedin.com/","//instagram.com/","//www.instagram.com/","//www.google.com/recaptcha/api2/","//hangouts.google.com/webchat/","//www.google.com/calendar/","//www.google.com/maps/embed","spotify.com/","soundcloud.com/","//player.vimeo.com/","//disqus.com/","//tgwidget.com/","//js.driftt.com/","friends2follow.com","/widget","login","//video.bigmir.net/","blogger.com","//smartlock.google.com/","//keep.google.com/","/web.tolstoycomments.com/","moz-extension://","chrome-extension://","/auth/","//analytics.google.com/","adclarity.com","paddle.com/checkout","hcaptcha.com","recaptcha.net","2captcha.com","accounts.google.com","www.google.com/shopping/customerreviews","buy.tinypass.com"]);</script><script>(function t(){!function(){function f(n,i,r){i=i||{};var s=n.ownerDocument||n,a=s.createEvent?s.createEvent("CustomEvent"):s.createEventObject();for(var e in a.initCustomEvent&&a.initCustomEvent(i.type,!!i.bubbles,!!i.cancelable,i.detail),i)a[e]=i[e];return setTimeout(function(){try{n.dispatchEvent?n.dispatchEvent(a):n.fireEvent("on"+i.type,s.createEventObject())}catch(o){var e=n["listen"+i.type];if(e)for(var t=0;t<e.length;++t)try{e[t].call(n,a)}catch(o){}}r()},0),this}function p(e,t,n){function i(e,t){try{var n=e.ownerDocument;if(n.createEventObject){var i=n.createEventObject();e.fireEvent("on"+t,i)}else(i=n.createEvent("HTMLEvents")).initEvent(t,!0,!0),e.dispatchEvent(i)}catch(r){}}var r=!0,s=e.className&&-1!=e.className.indexOf("fancified");if(window.jQuery){var a=window.jQuery(e);try{if(a.selectBoxIt)a.selectBoxIt("selectOption",a.val());else if(a.data("chosen")||a.chosen)a.trigger("chosen:updated").trigger("liszt:updated");else if(a.data("chooserElement"))a.trigger("change");else if(a.fancySelect)a.get("fancySelect").select("value",a.val());else if(a.selectBox)a.selectBox("value",a.val());else if(a.selectric)a.selectric("refresh");else if(a.coreUISelect){var o=a.data("coreUISelect");o.isSelectShow=!0,o.changeDropdownData(),o.isSelectShow=!1}else if(a.data("myJSPulldownObject"))a.data("myJSPulldownObject").setToValue(a.val());else if(a.fancyfields)a.setVal(a.val());else if(a.data("select2"));else if(a.data("selectize"))r=!1,a.data("selectize").setValue(a.val());else if(a.hasClass("fancified"))a.trigger("update");else if(a.selectmenu){var l=a.val();try{a.selectmenu("value",a[0].options[0].value)}catch(c){}a.selectmenu("value",l)}else a.hasClass("select-hidden")&&a.next("div.select-styled").length&&a.next("div.select-styled").next(".select-options").length&&(ulElement=a.next("div.select-styled").next(".select-options"),liElement=ulElement.find("li[rel='"+a.val()+"']"),liElement.click());a.trigger("change")}catch(c){}}r&&(s&&i(e,"update"),i(e,"change"),i(e,"blur")),n()}function s(t,n,i,r){var s=t.value;f(t,{type:"keydown",keyCode:n,which:n,charCode:n,bubbles:!0},function(){f(t,{type:"keypress",keyCode:n,which:n,charCode:n,bubbles:!0},function(){setTimeout(function(){var e=t.value;s==e&&(t.value=i),f(t,{type:"input",keyCode:n,which:n,charCode:n,bubbles:!0},function(){f(t,{type:"keyup",keyCode:n,which:n,charCode:n,bubbles:!0},function(){r()})})},1)})})}function a(e,t,n,i){if(t&&""!=t){var r=t.charCodeAt(0);n+=t.charAt(0),s(e,r,n,function(){a(e,t.substring(1),n,i)})}else i()}function l(e,t,n){if(window.abineTriggerChangeInProgress)setTimeout(function(){l(e,t,n)},100);else{e.setAttribute("mmautofilling","now"),e.focus(),e.value=t;var i=!0;window.abineTriggerChangeInProgress=!0;try{if(window.jQuery){var r=window.jQuery(e);r.data("rawMaskFn")||r.mask||r.CardPhoneFormatting?r.focus().val(t).trigger("input").trigger("paste"):r.next(".inner").find(".options").length&&(i=!1,r.next(".inner").find(".options").find("span").each(function(){var e=$(this);-1<$(e).html().toLowerCase().indexOf(t)&&$(e).click()}))}}catch(o){}e.defaultValue=t;try{var s=e._valueTracker;s&&s.setValue(t+"old")}catch(o){}try{e.__preactattr_&&e.__preactattr_.onChange&&(e.value=t,e.__preactattr_.onChange({target:e}),e.click())}catch(o){}try{var a=new Event("input",{bubbles:!0,cancelable:!0,data:t});a.simulated=!0,e.dispatchEvent(a)}catch(o){}try{f(e,{type:"keyup",keyCode:38,which:38,charCode:38,bubbles:!0},function(){})}catch(o){}i?f(e,{type:"change"},function(){f(e,{type:"blur"},function(){window.abineTriggerChangeInProgress=!1,e.removeAttribute("mmautofilling"),n()})}):(e.removeAttribute("mmautofilling"),window.abineTriggerChangeInProgress=!1,n())}}function t(e,t,n){try{e.ownerDocument.defaultView.focus()}catch(i){}f(e,{type:"focus"},function(){f(e,{type:"click"},function(){a(e,t+"\n","",function(){l(e,t,function(){f(document,{type:"abineFilled"},function(){n()})})})})})}function i(e,t,n,i){var r=/[\s]+/g,s=(t||"").toLowerCase().replace(r,""),a=function(){f(document,{type:"abineFilled"},function(){i()})},o=!1,l=!1,c=e.getElementsByTagName("option");if(c&&0<c.length){for(var d=-1,u=0;u<c.length;u++){var h=(c[u].text||"").toLowerCase().replace(r,"");if((c[u].getAttribute("value")||"").toLowerCase().replace(r,"")==s||h==s){c[u].selected||(o=!0,c[u].selected=!0),l=!0;break}-1==d&&-1!=h.indexOf(s)&&(d=u)}l||-1==d||n||c[d].selected||(o=!0,l=c[d].selected=!0)}e.setAttribute("abineFillResponse",l),o?p(e,t,a):a()}function r(){if(0<(t=document.getElementsByClassName("abineFillTarget")).length)return t[0];for(var e=0;e<frames.length;e++)try{var t;if(0<(t=frames[e].document.getElementsByClassName("abineFillTarget")).length)return t[0]}catch(o){}return null}function e(){var n=document.createElement("div");n.id="abineFillElement","undefined"!=typeof paypal&&n.setAttribute("data-paypal","1"),"undefined"!=typeof OffAmazonPayments&&n.setAttribute("data-amazon","1"),"undefined"!=typeof MasterPass&&n.setAttribute("data-masterpass","1"),document.documentElement.appendChild(n),n.addEventListener("fill",function(){var e=r();e?t(e,n.getAttribute("value"),function(){}):f(document,{type:"abineFilled"},function(){})},!1),n.addEventListener("fillSelect",function(){var e=r();e?i(e,n.getAttribute("value"),!!n.getAttribute("skipPartial"),function(){}):f(document,{type:"abineFilled"},function(){})}),n.addEventListener("triggerChange",function(){var e=r(),t=n.getAttribute("value");e&&(e.nodeName.match(/select/i)?p(e,t,function(){}):l(e,t,function(){}))})}e()}()})()</script></head>
+<body bis_register="W3sibWFzdGVyIjp0cnVlLCJleHRlbnNpb25JZCI6ImVwcGlvY2VtaG1ubGJoanBsY2drb2ZjaWllZ29tY29uIiwiYWRibG9ja2VyU3RhdHVzIjp7IkRJU1BMQVkiOiJlbmFibGVkIiwiRkFDRUJPT0siOiJlbmFibGVkIiwiVFdJVFRFUiI6ImVuYWJsZWQiLCJSRURESVQiOiJkaXNhYmxlZCJ9LCJ2ZXJzaW9uIjoiMS45LjA0Iiwic2NvcmUiOjEwOTA0MH1d">
+     <a href="http://localhost/sembako/halaman_pelanggan.php"><img style="padding-left: 28%; height: 350px; width: 610px;" src="./HALAMAN DATA TRANSAKSI _ TOKO SEMBAKO_files/sembako.jpg"></a>  
+  <div class="navigasi" bis_skin_checked="1">
+      <a href="http://localhost/sembako/halaman_admin.php">Home</a>
+      <a href="http://localhost/sembako/transaksi.php">Transaksi</a>
+      <a href="http://localhost/sembako/bahan_pokok.php">Sembako</a>
+      <a href="http://localhost/sembako/pengguna.php">Data Pelanggan</a>
+    </div>
+    <div class="profile" bis_skin_checked="1">
+    <center>
+      <img src="./HALAMAN DATA TRANSAKSI _ TOKO SEMBAKO_files/account.png">
+            <hr>
+      <h3 style="color: green">Tanggal : 04-02-2023</h3>
+    </center></div>
+    <div class="isi" bis_skin_checked="1">
+    
+    <center>
+    <images src="bayar.jpeg" alt="Gambar Laporan">
+    </images></center>
+   
+      <br>
+    </div>
+    <div class="footer" style="color: white;" bis_skin_checked="1">©Copyright 2022</div>
+    
+</body><div id="abineFillElement" bis_skin_checked="1"></div></html>
