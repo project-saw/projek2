@@ -1,5 +1,5 @@
 ## 🌐 APLIKASI BERBASIS WEB - SEMBAKUL (Sembako Murah dan Berkulitas) 👨‍🌾
-![sisa](MASUKIN LINK DARI ASSET)
+![New Website Blue Mockup Instagram - Laptopnw](https://github.com/user-attachments/assets/2c634b1d-3837-43fc-a6df-56b663a51e0b)
 
 ## Deskripsi
 Proyek ini bertujuan untuk merancang dan mengimplementasikan aplikasi pengelolaan sembako yang dapat membantu mempermudah proses pengelolaan stok dan distribusi kebutuhan pokok secara efisien. Aplikasi ini memungkinkan pengguna untuk mengelola inventaris sembako, memantau ketersediaan barang, serta melakukan pemesanan dan pengiriman melalui antarmuka web 
