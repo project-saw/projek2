@@ -17,4 +17,18 @@ Proyek ini bertujuan untuk merancang dan mengimplementasikan aplikasi pengelolaa
 - 💳 Mendukung pembayaran praktis melalui e-wallet.
 
 ## ✅ Panduan Instalasi
-1. pastikan aplikasi xampp dan
+1. **Pastikan mempunyai aplikasi xampp dan vscode**
+2. **Sebelum run koding pastika juga mengaktifkan xampp untuk mengaktifkan module Apache dan MySQL**
+   <img width="407" alt="image" src="https://github.com/user-attachments/assets/ebfc19fb-d71c-4cad-8075-35332723f301">
+3. **Clone repositori dengan perintah**
+   ```sh
+   git clone https://github.com/yourusername/yourproject.git
+4. **Sebelum menjalankan kodingan jangan lupa import db di database mysql, terdapat di folder database**
+5. **Lalu jalankan kodingan dengan di website**
+     ```sh
+   localhost/sembako
+
+## ✨Terima Kasih
+Kami ingin mengucapkan terima kasih kepada semua kontributor yang telah membantu membangun proyek ini! 🙏
+Jika Anda memiliki pertanyaan atau saran, jangan ragu untuk menghubungi kami di shahiezasauki02@gmail.com
+  
